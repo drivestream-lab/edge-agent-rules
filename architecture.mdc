@@ -1,0 +1,117 @@
+---
+description: Layered src/ layout for Edge Agent — business_services + infra_services with *_service naming; two-plane doctrine is conceptual.
+alwaysApply: true
+---
+
+# Architecture & package layout
+
+Use a **layered `src/` tree** aligned with other Python platform services:
+**`business_services/`** + **`infra_services/`** + shared shell packages.
+The Edge Agent is a **long-running reconciliation + scrape/forward process**,
+not an HTTP API — omit `api/` unless a local diagnostics endpoint is product-
+required.
+
+## Job boundary (non-negotiable)
+
+- The agent **delivers** artifacts, **observes** the inference engine, and
+  **reports** state milestones.
+- The agent **does not** decide model promote or revert, and **does not**
+  pull the switch trigger inside the engine.
+- Model-specific knowledge arrives as **data in a signed Deployment Manifest**,
+  not as hardcoded branches in agent code (see **`deployment-manifest.mdc`**).
+
+## Two planes are doctrine, not package folders
+
+Data plane (telemetry uplink) vs control plane (OTA downlink) organise
+**responsibilities** — see **`two-plane-architecture.mdc`**. They are **not**
+mandatory top-level packages (`src/data_plane/`, `src/control_plane/`). Map
+plane work into business vs infra services instead.
+
+## Entrypoints
+
+- **`src/main.py`** — Process entry only: load `.env`, construct **`AppSettings`**,
+  **`setup_logging`**, configure DI, `initialize_all_services`, then run the
+  agent loop. Keep this file thin.
+- **`src/app.py`** (optional) — **`create_agent()`** composition root: wire DI
+  and return the runnable. Avoid business logic beyond wiring.
+
+Day-one cold start and later updates share **one code path**: compare desired
+vs actual and reconcile (see **`ota-reconciliation.mdc`**).
+
+## Standard packages
+
+| Package | Responsibility |
+|--------|----------------|
+| **`configs/`** | Settings hierarchy, env-backed `AppSettings` |
+| **`logging/`** | `get_logger`, `setup_logging`, correlation / inference ID context |
+| **`di/`** | `injector` container, `dependency_container`, `modules/*` |
+| **`infra_services/`** | Long-lived / external IO: MQTT, disk buffers, scrape HTTP client, manifest verify, container runtime, hardware telemetry — subclass **`BaseInfraService`** |
+| **`business_services/`** | Use cases: reconcile, governance enforcement, scrape→buffer→forward orchestration — subclass **`BaseBusinessService`**; **Pydantic** APIs |
+| **`models/`** | **All** Pydantic DTOs — desired state, milestones, buffer records, manifest shapes |
+| **`exceptions/`** | `BaseAppException` and typed errors |
+| **`utils/`** | Generic helpers (not domain reconcile or buffer logic) |
+
+Omit packages the concrete agent does not need. Do **not** invent plane-,
+engine-, or governance-named top-level packages for day one — grow a
+subpackage under business/infra only when a concern exceeds a few cohesive
+modules.
+
+## Naming — explicit `*_service` suffix
+
+Every module and class under **`business_services/`** and **`infra_services/`**
+uses an explicit **`_service`** suffix for readability and grep-ability.
+
+| Layer | Module file | Class |
+|-------|-------------|-------|
+| Business | `reconcile_service.py` | `ReconcileService` |
+| Business | `governance_service.py` | `GovernanceService` |
+| Business | `telemetry_forward_service.py` | `TelemetryForwardService` |
+| Infra | `mqtt_service.py` | `MqttService` |
+| Infra | `scrape_client_service.py` | `ScrapeClientService` |
+| Infra | `metrics_buffer_service.py` | `MetricsBufferService` |
+| Infra | `capture_buffer_service.py` | `CaptureBufferService` |
+| Infra | `manifest_verifier_service.py` | `ManifestVerifierService` |
+| Infra | `engine_runtime_service.py` | `EngineRuntimeService` |
+| Infra | `hardware_telemetry_service.py` | `HardwareTelemetryService` (+ profile Protocol/impls in same module or sibling) |
+
+**Do not** use truncated names like `scrape_client.py`, `engine_runtime.py`, or
+`manifest_verifier.py` for service modules — always `*_service.py`.
+
+Import services from **service modules**, not package `__init__.py` re-exports.
+
+## Hardware and OS (product / ADR, not constitution)
+
+The constitution assumes a constrained edge device with a container runtime,
+persistent disk, and optional accelerator telemetry via a
+**`HardwareTelemetryProvider`** (concrete impl in the consumer foundation).
+Specific SoC / GPU stack / OS OTA mechanism are **consumer product + ADR**.
+
+## Import paths
+
+- Use **`from src.<package>.<module> import ...`** from the repo root.
+- Set **`pythonpath = ["."]`** in **pytest** (and Poetry).
+- **All imports at top of file** — see **`python-imports.mdc`**.
+
+## Layering enforcement
+
+| Boundary | Tool |
+|----------|------|
+| `business_services` must not own raw MQTT/disk/container SDKs — call infra | **import-linter** + review |
+| Business service method signatures use Pydantic, not untyped `dict` | **pyright** |
+| Engine switch / promote logic must not live in the agent | code review + ADR |
+
+Example `.importlinter` layers:
+
+```ini
+layers =
+    src.business_services
+    src.infra_services
+```
+
+## Related rules
+
+- **Planes (doctrine):** `two-plane-architecture.mdc`
+- **DI:** `dependency-injection.mdc`
+- **Fail fast:** `fail-fast.mdc`
+- **OTA:** `ota-reconciliation.mdc`
+- **Engine seam:** `engine-contract.mdc`

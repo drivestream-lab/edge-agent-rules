@@ -1,0 +1,53 @@
+---
+description: MQTT v5 client contract — QoS 1, persistent session, mTLS, retained desired-state; broker-product-agnostic.
+alwaysApply: true
+---
+
+# MQTT transport
+
+The Edge Agent uses **one broker client** for both planes. This file defines
+the **protocol contract**, not a broker product catalog.
+
+## Client contract (constitution default)
+
+| Concern | Default |
+|---------|---------|
+| Protocol | **MQTT v5** |
+| QoS (telemetry + desired-state) | **QoS 1** |
+| Session | **Persistent session** (survives reconnect; no lost retained intent) |
+| Auth / transport security | **mTLS** client certificates |
+| Desired-state delivery | **Retained** (or equivalent shadow) messages so intermittent devices always see latest intent |
+
+Reference client libraries for the agent's own process: **`paho-mqtt`** /
+**`aiomqtt`**. Broker **product** choice is a consumer foundation + ADR concern.
+
+## Topic and ACL mechanics
+
+- Prefer **per-device topic namespaces** with broker ACLs so one device cannot
+  publish or subscribe as another.
+- Topic **catalog strings** (exact names) live in consumer
+  **`docs/specification/product/`** and settings — not hardcoded inventively
+  across modules.
+- Do **not** adopt QoS 2 without an ADR (**`edge-agent-adr.mdc`**). Prefer
+  QoS 1 + **idempotent downstream keys** (e.g. inference / correlation ID).
+
+## Uplink vs downlink jobs
+
+- **Uplink:** publish telemetry from disk-backed buffers; never publish from
+  RAM-only queues across power cycles (**`local-buffer-pattern.mdc`**).
+- **Downlink:** subscribe to desired-state; reconcile when online
+  (**`ota-reconciliation.mdc`**). MQTT's strength for intermittent devices is
+  a primary justification for the broker — stronger than uplink alone.
+
+## Anti-patterns
+
+- Pushing model binaries through the broker
+- Holding the only copy of desired-state in agent RAM without retained/cloud
+  shadow backup
+- Silent cleartext MQTT in any environment without an ADR with expiry
+
+## Related rules
+
+- **Planes:** `two-plane-architecture.mdc`
+- **Security:** `device-identity-security.mdc`
+- **ADR triggers:** `edge-agent-adr.mdc`

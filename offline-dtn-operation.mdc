@@ -1,0 +1,52 @@
+---
+description: Disconnected-by-design operation — ODD-sized buffers, tiered sync by link quality, on-device autonomy during blackout.
+alwaysApply: true
+---
+
+# Offline / DTN operation
+
+Design for **disconnected operation with opportunistic sync** as the default
+mode, not as a degraded edge case. Physical site nouns (mine, vehicle, depot,
+shift length) are **product / ODD** inputs — not constitution constants.
+
+## (a) Tier sync by link quality
+
+Where link quality varies by location or time:
+
+| Tier | Carries | Why |
+|---|---|---|
+| **Thin / opportunistic** | Metrics, heartbeat, drift/health **flags** — tiny | Keeps fleet-view alive without shipping bulk |
+| **Fat / high-quality** | **Bulk capture payloads** | Heavy training data drains only when the link can take it |
+
+Heavy captures **wait for the fat tier by design** — do not force a shift of
+raw inputs through a thin tier. Exact physical tiers and names are product
+spec (connectivity profile / ODD).
+
+## (b) Buffer sizing and degradation
+
+- Size buffers from the product's declared **worst-case offline window**
+  (ODD-derived), plus margin — not a hardcoded global constant.
+- Buffer must be **disk-backed** and survive power-down between windows.
+- On saturation: **evict by value** (see **`local-buffer-pattern.mdc`**);
+  reservoir-sample heavy inputs so mid-window interesting events are not
+  erased by routine bulk.
+
+## (c) On-device autonomy during blackout
+
+With zero connectivity, everything that must happen *during* the blackout
+happens on device: drift/ODD detection that gates capture, buffer pressure
+management, local health judgement for revert authority when product requires
+**on-device-autonomous** revert. The cloud cannot be in the loop.
+
+## (d) Control plane already survives this
+
+Desired-state reconciliation (**`ota-reconciliation.mdc`**) means a device
+offline for the whole window picks up the latest desired state at next
+connect. Large artifact downloads defer to the fat tier — no special-case
+command queue for coverage gaps.
+
+## Related rules
+
+- **Buffers:** `local-buffer-pattern.mdc`
+- **OTA:** `ota-reconciliation.mdc`
+- **ADR (sizing policy):** `edge-agent-adr.mdc`

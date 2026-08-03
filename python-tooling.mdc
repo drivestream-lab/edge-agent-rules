@@ -1,0 +1,70 @@
+---
+description: Black, Ruff, pyright, import-linter, pre-commit, pytest — Python 3.11+ Edge Agent hygiene.
+alwaysApply: true
+---
+
+# Tooling
+
+## Environment (Python 3.11+ · Poetry · `.venv`)
+
+**Python 3.11+** is required for Edge Agent consumers. This is an intentional
+deviation from the org's common FastAPI **3.12+** default — driven by edge OS /
+SDK constraints on target devices. Document the interpreter in each consumer
+`README` and `pyproject.toml`.
+
+```bash
+python3.11 -m venv .venv   # or the repo's supported 3.11.x
+poetry env use .venv/bin/python
+poetry install --with dev
+```
+
+Every consumer provides **`make setup`** → `scripts/setup_dev.sh`.
+
+## Native / hardware dependencies
+
+Packages that bind to device GPU libraries (e.g. NVML) may require a
+**conda or device-native** lane on hardware. Keep a **mock / fake provider**
+for laptop and CI so `make check` and `make test` stay green without physical
+accelerators. Concrete provider choice is foundation + ADR territory.
+
+## Format and lint
+
+- **Black** + **Ruff**; line length **100**; target the repo's Python version.
+- Run on **`src/`** and **`tests/`** in CI and before push.
+
+## pyright
+
+- Prefer **`pyrightconfig.json`** with `venvPath` / `venv` / `exclude`.
+- New agents: start at **`strict`** when practical; otherwise **`basic`** and tighten.
+- Do not widen to `Any` to silence errors.
+
+## import-linter
+
+Example `.importlinter` layers:
+
+```ini
+[importlinter]
+root_packages =
+    src
+
+[importlinter:contract:layer-architecture]
+name = Edge agent layered architecture
+type = layers
+layers =
+    src.business_services
+    src.infra_services
+```
+
+Adapt layers to the consumer's actual tree (**`architecture.mdc`**).
+
+## Pre-commit & Makefile
+
+- Local hooks for pyright / import-linter must call **`.venv/bin/...`**.
+- Canonical targets: `setup`, `check` (format lint types layers), `test`
+  (ignore verify/device/debug).
+
+## Related rules
+
+- **Typing:** `strong-typing.mdc`
+- **Verify:** `testing-verify-flows.mdc`
+- **SDD:** `spec-driven-development.mdc`

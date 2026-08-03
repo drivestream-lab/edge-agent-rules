@@ -1,0 +1,57 @@
+---
+description: Desired-state OTA reconciliation — deliver, observe, report; agent never switches models; milestone enum.
+alwaysApply: true
+---
+
+# OTA reconciliation
+
+Model the downlink as **desired state**, not fire-and-forget commands. The
+cloud publishes what the device should run; whenever online, the agent
+compares desired vs actual and converges. Under intermittent connectivity
+there is no lost-command problem — the agent always reconciles to the latest
+desired state on next connection.
+
+## Agent role
+
+| Does | Does not |
+|------|----------|
+| Receive desired-state pointer | Decide promote vs revert quality |
+| Verify signed Deployment Manifest | Switch the active model inside the engine |
+| Pull + hash-verify artifact over HTTPS/OCI | Push the model binary through the broker |
+| Stage into standby / deliver to engine-watched location | Restart the engine for every model swap when hot-reload is available |
+| Observe engine liveness + scrape active version | Own shadow-quality evaluation |
+| Report milestones on the data plane | |
+
+## Milestone vocabulary (closed enum)
+
+Use a **`Type`-suffixed enum** (see **`pydantic-schemas.mdc`**) for milestones,
+e.g. values: `staged`, `shadow-running`, `promoted`, `reverted`, `failed`.
+Do not scatter free strings.
+
+## Shadow vs direct switch
+
+Both modes may be required by product. The **model team / engine** selects
+based on slot memory/compute headroom. Transient ~2× for shadow must be
+feasible under the hosted slot allocation — if not, refuse or defer rather
+than starve a neighbour (**`resource-governance.mdc`**, **`deployment-manifest.mdc`**).
+
+## Flow (verify-first)
+
+```
+receive desired-state pointer
+  → fetch manifest → VERIFY SIGNATURE
+    → compatibility / pre-flight
+      → pull artifact → VERIFY HASH
+        → stage ........................ report staged
+          → hand off to engine ......... report shadow-running (when live)
+            → scrape active version .... report promoted | reverted | failed
+```
+
+Day-one install with empty `hosted_models` is the **same** reconcile path.
+
+## Related rules
+
+- **Manifest:** `deployment-manifest.mdc`
+- **Engine seam:** `engine-contract.mdc`
+- **Security:** `device-identity-security.mdc`
+- **MQTT retained desired-state:** `mqtt-transport.mdc`

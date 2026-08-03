@@ -1,0 +1,43 @@
+---
+description: Two-plane doctrine — data plane (telemetry uplink) vs control plane (OTA downlink); model binary off both planes.
+alwaysApply: true
+---
+
+# Two-plane architecture
+
+Everything the Edge Agent does falls into one of two planes. This is the
+canonical organising idea for networking and package ownership.
+
+| Plane | Direction | Carries | Typical home |
+|---|---|---|---|
+| **Data plane** | Edge → Cloud (uplink) | All **telemetry**: operational metrics *and* captured inference I/O | Infra buffers + scrape client; business forward/orchestration services |
+| **Control plane** | Cloud → Edge (downlink) | **OTA**: desired-state, deployment triggers, configuration pointers | Business reconcile service; infra MQTT + manifest verifier + engine runtime |
+
+Planes organise **responsibility**. They are **not** top-level package folders
+(`src/data_plane/`, `src/control_plane/`). See **`architecture.mdc`** for the
+`business_services/` + `infra_services/` layout and `*_service` naming.
+
+## Hard rules
+
+1. **Observability and capture are two lanes inside the single data plane**,
+   not separate planes (see **`local-buffer-pattern.mdc`**).
+2. The **model / engine binary is off both planes** — it is pulled over HTTPS
+   (or OCI) from an artifact registry, never pushed through the broker.
+3. Control-plane messages carry **pointers and signed manifests**, not
+   payloads large enough to stress thin links.
+4. Any new feature must declare **which plane it belongs to** before design
+   starts. Features that need both planes must split cleanly at the agent
+   (the on-device hinge) and at the broker (the cloud hinge).
+
+## Terminology
+
+- Prefer **telemetry** for the data plane and **OTA / desired-state** for the
+  control plane in logs, metrics labels, and package names.
+- Do not invent a third plane for "observability" or "captures."
+
+## Related rules
+
+- **Buffers:** `local-buffer-pattern.mdc`
+- **MQTT:** `mqtt-transport.mdc`
+- **OTA:** `ota-reconciliation.mdc`
+- **Layout:** `architecture.mdc`

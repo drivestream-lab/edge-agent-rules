@@ -1,0 +1,35 @@
+---
+description: Prefer fail-fast over defensive coding; no silent recovery without approval.
+alwaysApply: true
+---
+
+# Fail fast (no silent defensive coding by default)
+
+This codebase is **strongly typed** with validation at **edges** (settings,
+manifests, MQTT payloads, buffer records). Inner layers should **assume
+contracts hold** and **surface violations immediately**.
+
+## Prefer
+
+- **Raise** on invalid input, broken invariants, or impossible state.
+- **Let failures propagate** when the caller cannot meaningfully recover;
+  handle at entrypoints or infra boundaries with explicit policy.
+- **Narrow, explicit handling** where product requires it (retries for
+  transient broker I/O, resumable artifact download) — documented in module
+  or ADR.
+
+## Avoid without explicit approval
+
+- Broad **`except Exception`** that swallows errors or substitutes sentinels.
+- **Silent fallbacks** that hide misconfiguration (especially missing trust
+  anchors, bad certs, or unverified manifests).
+- Defensive branches for shapes **Pydantic already guarantees**.
+
+Quota breach and governance must **fail loudly or backpressure** — not
+silently degrade everyone (**`resource-governance.mdc`**).
+
+## Related rules
+
+- **Typing:** `strong-typing.mdc`
+- **Schemas:** `pydantic-schemas.mdc`
+- **Security:** `device-identity-security.mdc`

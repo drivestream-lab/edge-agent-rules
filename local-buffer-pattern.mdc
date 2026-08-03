@@ -1,0 +1,47 @@
+---
+description: Two-lane disk-backed buffers — observability (loss-tolerant) vs capture (loss-averse); value-based eviction; never RAM-only.
+alwaysApply: true
+---
+
+# Local buffer pattern
+
+The single most important data-plane decision: **do not use one store-and-forward
+buffer for all telemetry.** The two lanes have opposite requirements.
+
+| Lane | Content | Loss tolerance | Buffer design |
+|---|---|---|---|
+| **Observability** | Latency, util, throughput, drift/confidence scores | Loss-tolerant — downsample/drop old on overflow | Small, ring / WAL, cheap |
+| **Capture (flywheel)** | Inference input + output for fine-tuning | **Loss-averse** — a dropped triggered capture is permanently lost | Durable, disk-backed, **priority-evicted**, QoS 1 |
+
+## Hard rules
+
+1. **Never hold the only buffer copy in RAM** across power cycles — stream from
+   **disk** (SQLite/WAL for metrics lane; durable queue for captures).
+2. Evict by **value, not age**, and drain by **priority, not FIFO**, on reconnect.
+3. Always buffer cheap fields: inference **output**, capture metadata, and the
+   **correlation / inference ID** that joins input↔output.
+4. Buffer heavy raw **input** only when a product-defined trigger fires
+   (drift / OOD / ODD gate), under an explicit disk cap.
+5. Reduce high-frequency streams **at the edge before buffering** — per slot /
+   per metric, not one global rate. Keep a short full-resolution local ring so
+   a trigger can retroactively grab what the model saw.
+
+## Payload asymmetry
+
+- Output is small — prefer keeping it.
+- Input may be large — it is what fills disk during outage; apply caps and
+  reservoir sampling under pressure so a representative spread is retained,
+  not only the newest window.
+
+## Implementation notes
+
+- Metrics → MQTT glue is accepted cost when a single broker uplink is chosen.
+- Prefer Python-native scrape + disk queue unless rich tracing later forces a
+  companion collector — either way, **disk, not RAM**.
+
+## Related rules
+
+- **Planes:** `two-plane-architecture.mdc`
+- **Offline:** `offline-dtn-operation.mdc`
+- **Governance:** `resource-governance.mdc`
+- **MQTT:** `mqtt-transport.mdc`
