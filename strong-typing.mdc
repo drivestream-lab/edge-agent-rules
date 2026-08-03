@@ -1,0 +1,34 @@
+---
+description: Strong typing — Python 3.11+, annotations, validated boundaries.
+alwaysApply: true
+---
+
+# Strong typing
+
+## Baseline
+
+- Target **Python 3.11+** (see **`python-tooling.mdc`** for the version pin).
+- Annotate **public** functions and methods, including **`-> None`**.
+- Prefer concrete types over **`Any`** at settings, manifest, MQTT, buffer,
+  and persistence boundaries.
+
+## Boundaries
+
+- **Validate at the edges**: env → **`AppSettings`**; manifests → Pydantic;
+  scraped metrics / buffer records → Pydantic; files → **`model_validate`**.
+- **`business_services`** public methods default to **Pydantic** in/out — not
+  untyped **`dict`**; exceptions need explicit alignment
+  (**`pydantic-schemas.mdc`**).
+- **Closed vocabularies** (milestones, roles, overflow policies): use
+  **`str, Enum`** with a **`Type` suffix**.
+
+## Quality bar
+
+- Do not silence checkers by widening to **`Any`** or untyped **`dict`**.
+- **pyright** is the enforcer — see **`python-tooling.mdc`**.
+
+## Related rules
+
+- **Fail fast:** `fail-fast.mdc`
+- **Pydantic:** `pydantic-schemas.mdc`
+- **Imports:** `python-imports.mdc`

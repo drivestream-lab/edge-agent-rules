@@ -1,0 +1,70 @@
+---
+description: Injector-based DI — @inject for all services, modules, container, init/shutdown lifecycle.
+alwaysApply: true
+---
+
+# Dependency injection (`injector`)
+
+## Design principle
+
+**One DI style for all services.** Infra and business services use **`@inject`**
+on `__init__`. The container owns singleton creation — no `get_instance()` on
+service classes. Settings use a **separate** `get_instance()` pattern and are
+**not** injected.
+
+## Container
+
+- Expose **`configure_container() -> Injector`** and **`provide_service(Type[T])`**
+  from **`src/di/dependency_container.py`**.
+- **`get_container()`** fails fast if used before configure.
+
+## Modules (typical)
+
+- **`ConfigModule`** — do **not** bind settings classes; keep empty or
+  non-settings bindings only
+- **`InfraModule`** — MQTT, disk buffers, scrape client, artifact/manifest
+  verifier, container runtime, hardware telemetry (`*_service` modules)
+- **`BusinessServicesModule`** — reconcile, governance, telemetry forward
+  orchestration (`*_service` modules)
+
+## Construction
+
+```python
+from injector import inject
+
+class MqttService(BaseInfraService):
+    @inject
+    def __init__(self) -> None:
+        super().__init__()
+        self._settings = AppSettings.get_instance()
+
+    async def initialize(self) -> None:
+        ...  # open client connection
+
+    async def close(self) -> None:
+        ...
+
+    async def health_check(self) -> bool:
+        ...
+```
+
+- `__init__` is cheap and synchronous; open resources in **`async initialize()`**.
+- Fetch settings **once** in `__init__` via `get_instance()` — never inject
+  settings types as constructor parameters.
+
+## Lifecycle
+
+| | **Infra** | **Business** |
+|---|-----------|--------------|
+| **`initialize()`** | Open pools/clients | Startup flag / rare async setup — not MQTT/disk pools |
+| **`close()`** | Release resources | Clear flag |
+| **`health_check()`** | Probe external dependency | Startup completed |
+
+Startup: all infra `get` + `await initialize()`, then business. Shutdown:
+business then infra (reverse).
+
+## Related rules
+
+- **Layout:** `architecture.mdc`
+- **Imports:** `python-imports.mdc`
+- **Fail fast:** `fail-fast.mdc`

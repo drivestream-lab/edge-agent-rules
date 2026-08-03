@@ -1,0 +1,40 @@
+---
+description: Multi-engine resource governance — per-engine disk/link quotas, agent headroom first, proactive GC, backpressure.
+alwaysApply: true
+---
+
+# Resource governance
+
+One device may host **multiple inference engines**. Logical container
+isolation is not enough — engines contend for disk and uplink. The agent is
+the on-device **resource governor**.
+
+## Hard rules
+
+1. **Per-engine disk quotas** — hard-capped allocation for that engine's
+   capture slice, logs, staged artifacts, and scratch. No engine may consume
+   another's space. Exact enforcement mechanism is ADR-gated
+   (**`edge-agent-adr.mdc`** D9 class); lean toward dedicated quota'd volumes.
+2. **Proactive recycling** before disk-full — captures deleted after confirmed
+   upload (else value/age eviction within quota); log rotation; GC superseded
+   model artifacts while keeping last-known-good + active A/B; TTL for temp.
+3. **Agent headroom first** — reserved quota/partition for control-plane needs
+   (desired-state, agent buffers, identity, agent logs) that **no engine can
+   evict**. A full disk must never break OTA receive or report.
+4. **Uplink fairness** — per-engine / per-tenant bandwidth or priority so one
+   team's bulk captures cannot starve another's sync window.
+5. **Backpressure over global failure** — measure usage, emit on observability
+   lane, on breach pause the offending engine's capture or alert — do not let
+   one neighbor take everyone down.
+
+## Visibility
+
+Emit per-engine disk and bandwidth usage on the observability lane. Product
+fields for per-slot disk quota and retention policy belong in consumer
+**`docs/specification/product/`**, not in this package.
+
+## Related rules
+
+- **Buffers:** `local-buffer-pattern.mdc`
+- **Offline:** `offline-dtn-operation.mdc`
+- **Fail fast:** `fail-fast.mdc`

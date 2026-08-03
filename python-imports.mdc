@@ -1,0 +1,31 @@
+---
+description: Module imports — all at file top; no local/function-scope imports (team standard).
+alwaysApply: true
+---
+
+# Imports (module scope only)
+
+## Rule
+
+- Place **all** `import` and `from … import` statements at the **top of the file**
+  after the module docstring (PEP 8 order: stdlib, third party, local).
+- **Do not** use **local imports** inside functions, methods, or class bodies
+  for normal dependencies.
+
+## No `TYPE_CHECKING`-only imports
+
+- Prefer **direct imports** so the dependency graph is visible at runtime.
+- Fix cycles with structure (smaller modules, invert dependencies) — do not
+  hide them with string annotations or `TYPE_CHECKING` for real contracts.
+
+## Narrow exception
+
+- **DI bootstrap only**: `dependency_container.py` may use **lazy imports
+  inside** `configure_container()`, `initialize_all_services()`, or similar
+  factory functions to break circular imports. Do not spread this pattern.
+
+## Related rules
+
+- **Layout:** `architecture.mdc`
+- **DI:** `dependency-injection.mdc`
+- **Typing:** `strong-typing.mdc`

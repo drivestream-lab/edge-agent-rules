@@ -1,0 +1,66 @@
+---
+description: Testing methodology for Edge Agent — pytest (mocked), tests/verify (compose), tests/device (real hardware, not CI).
+alwaysApply: true
+---
+
+# Testing & verify flows
+
+Each repository documents **concrete paths, config file names, and run
+commands** in **`tests/README.md`**. Maintain **`docs/specification/as-built/`**
+as the SSOT for layout and CI vs live boundaries.
+
+## Objectives
+
+- Prove reconcile + scrape + buffer + forward without requiring physical
+  hardware in CI.
+- Separate **fast in-process pytest** from **compose verify** from
+  **on-device** checks.
+- Keep secrets and machine-specific URLs out of version control.
+
+## Standard folder layout
+
+```text
+tests/
+  test_*.py               # pytest — in-process (may use tests/unit/ later)
+  verify/                 # docker-compose broker + fake/real local engine
+    verify_*.py
+  device/                 # real edge hardware — documented, not CI-run
+  debug/                  # exploration — not gating
+  _helpers/               # shared — not collected by pytest
+  config.yaml.example
+  config.yaml             # local only (gitignored)
+```
+
+## Categories
+
+| Category | Role | Typical invocation |
+|----------|------|--------------------|
+| **Pytest** | Fast in-process; mock MQTT, container runtime, hardware telemetry | `make test` |
+| **Verify** | Contract smoke against compose stack (broker + engine stand-in) | `python -m tests.verify.<script>` |
+| **Device** | Real SoC / GPU / OTA slot behaviour | Documented in `tests/README.md`; **not** CI |
+| **Debug** | Exploration | `python -m tests.debug.<script>` |
+
+**`make test`** must ignore `tests/verify/`, `tests/device/`, `tests/debug/`,
+and `tests/e2e/`.
+
+## CI vs live
+
+| Layer | Typical CI | Local / board Verify |
+|-------|------------|----------------------|
+| `make check` | yes | yes |
+| `make test` | yes | yes |
+| `tests/verify/*` | optional if compose available | yes |
+| `tests/device/*` | **no** | on hardware only |
+
+## Practices
+
+- Exit `0` on success, non-zero on failure for verify/device scripts.
+- Prefer enums from **`src/models/`** in assertions — no magic milestone strings.
+- Do not duplicate full compose journeys in pytest when verify already covers them;
+  use pytest for logic branches with mocks.
+
+## Related rules
+
+- **SDD:** `spec-driven-development.mdc`
+- **Tooling:** `python-tooling.mdc`
+- **Engine contract:** `engine-contract.mdc`

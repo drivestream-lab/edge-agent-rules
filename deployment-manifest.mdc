@@ -1,0 +1,62 @@
+---
+description: Signed Deployment Manifest — three questions (trust / fit / how-to-run); verify-first order; Pydantic at the edge.
+alwaysApply: true
+---
+
+# Deployment Manifest
+
+A **Deployment Manifest** is a small, **signed** per-release document that lets
+a generic agent act safely without hardcoding model-team specifics. Model-
+specific knowledge arrives as **data in the manifest**, not as code in the agent.
+
+## Three questions every deployment answers
+
+**(1) Should I trust this?** — authenticity & integrity
+
+- Release identity + version, artifact location (registry URL)
+- Expected cryptographic **hash**
+- **Signature + signer identity** (device independently verifies)
+- Link to who authorized it (platform approval process — exact workflow is
+  product / cloud concern)
+
+**(2) Does it fit here?** — compatibility / pre-flight
+
+- Target hardware / OS / driver profile (checked against device facts)
+- Resource requirements — memory, GPU share, disk quota — against slot
+  allocation and **`resource-governance.mdc`**
+- Runtime/engine dependencies; safety preconditions when product requires
+
+If shadow's ~2× need does not fit, the agent **refuses or defers** and reports
+`failed` — it does not starve a neighbour.
+
+**(3) How do I run it, and did it come up?** — launch & health contract
+
+- Launch spec: container image, entrypoint, config, target model-repo slot,
+  isolation mode
+- **Launch-health criteria** — enough for the agent to report
+  `shadow-running` or catch crash-on-start as `failed`
+- Boundary: shadow-**quality** evaluation stays with the engine; the agent
+  watches liveness and reports
+
+## Verify-first order (hard rule)
+
+1. Verify **manifest signature** before trusting any field
+2. Then compatibility checks
+3. Then pull artifact and verify **hash** against the manifest
+4. Then stage / deliver / observe
+
+Never download or execute based on an unverified manifest body.
+
+## Schema
+
+- Validate the manifest into a **Pydantic v2** model at the edge
+  (**`pydantic-schemas.mdc`**).
+- Prefer `extra="forbid"` for internal strictness; tolerate unknown keys only
+  for explicitly versioned external payloads with ADR.
+
+## Related rules
+
+- **OTA loop:** `ota-reconciliation.mdc`
+- **Security:** `device-identity-security.mdc`
+- **Pydantic:** `pydantic-schemas.mdc`
+- **Fail fast:** `fail-fast.mdc`

@@ -1,0 +1,39 @@
+---
+description: Device identity and control-plane security — mTLS, per-device ACLs, independent on-device verify, pre-planted trust anchors.
+alwaysApply: true
+---
+
+# Device identity & security
+
+The control plane is a path into a device that may sit next to machine control.
+A compromised broker or topic must not be enough to force an unverified model
+onto the device.
+
+## Non-negotiable baseline
+
+1. **Per-device identity** — X.509 client certificates (secure element / TPM
+   when available on the device). Degraded storage of keys without SE/TPM is
+   an ADR with expiry, not silent default.
+2. **mTLS** to the broker — no anonymous or password-only MQTT in production
+   without an ADR with expiry.
+3. **Per-device topic ACLs** — a device cannot impersonate another.
+4. **Independent on-device signature verification** before activation — the
+   agent can refuse an artifact even if the cloud "approved" it (last line of
+   defence).
+5. **Provisioning preconditions** (set at provisioning, not learned over the
+   network): device identity (cert/key), broker endpoint, and trust anchors
+   (e.g. Uptane / TUF root). Without these pre-planted, there is a
+   trust-on-first-use hole.
+
+## Secrets and logging
+
+- Never log private keys, cert PEMs, or tokens — even partially, even at debug.
+- Secret **values** are not constitution content; rotation and vault mechanics
+  live in consumer ops / IAC.
+
+## Related rules
+
+- **Manifest verify:** `deployment-manifest.mdc`
+- **MQTT:** `mqtt-transport.mdc`
+- **ADR exceptions:** `edge-agent-adr.mdc`
+- **Logging:** `logging-loguru.mdc`
