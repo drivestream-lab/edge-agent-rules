@@ -1,0 +1,97 @@
+---
+description: Index of Edge Agent guideline rules (modular MDC topics).
+alwaysApply: true
+---
+
+# Code guideline modules (index)
+
+These **`.mdc`** files govern **architectural patterns** for Edge Agent services.
+They live in the **`edge-agent-rules`** repository and are consumed via a
+**git submodule** at each agent repo's **`.cursor/rules/`** (this directory when mounted).
+
+**Product-specific** requirements, ADRs, hardware SKUs, broker product names,
+tenant ODD numbers, and env URLs belong in each agent repo under
+**`docs/specification/`** and **README** — not in this package.
+
+## Sourcing principle
+
+Every rule below states a **use-case pattern** for an agent that:
+
+1. Scrapes / buffers / forwards telemetry (data plane, uplink)
+2. Reconciles desired-state OTA (control plane, downlink)
+3. Delivers artifacts to a containerized inference engine and observes it —
+   **never** decides model promote/revert
+
+Named libraries the agent's **own process** imports (e.g. `paho-mqtt`, `loguru`,
+`injector`, SQLite) may appear here as craft defaults. External peer products
+(broker vendor, SoC, serving runtime) are **not** named here — they belong in
+the consumer foundation and that repo's ADRs.
+
+## Process rules
+
+| File | Topic |
+|------|--------|
+| **`spec-driven-development.mdc`** | SDD truth hierarchy, as-built discipline, PR traceability |
+| **`testing-verify-flows.mdc`** | pytest / verify / device-tier methodology |
+| **`edge-agent-adr.mdc`** | ADR triggers, template, growth path |
+
+## Architecture
+
+| File | Topic |
+|------|--------|
+| **`architecture.mdc`** | Layered `src/` — `business_services/` + `infra_services/` with `*_service` naming; planes are doctrinal not folders |
+| **`two-plane-architecture.mdc`** | Data plane vs control plane; model artifact off both planes |
+| **`fail-fast.mdc`** | Fail fast; no silent defensive recovery without approval |
+| **`python-imports.mdc`** | All imports at top of file; DI bootstrap exception |
+| **`dependency-injection.mdc`** | `injector`, `@inject`, infra/business lifecycle |
+| **`pydantic-schemas.mdc`** | Pydantic not Dict; domain enums with `Type` suffix |
+| **`strong-typing.mdc`** | Annotations, validated boundaries |
+| **`logging-loguru.mdc`** | `get_logger`, structured JSON, inference correlation ID |
+| **`python-tooling.mdc`** | Black, Ruff, pyright, import-linter, Makefile; **Python 3.11+** |
+
+## Data plane
+
+| File | Topic |
+|------|--------|
+| **`mqtt-transport.mdc`** | MQTT v5 / QoS 1 / persistent session / mTLS client contract |
+| **`local-buffer-pattern.mdc`** | Two lanes, disk-backed, value-based eviction |
+| **`offline-dtn-operation.mdc`** | Disconnected-by-design, tiered sync by link quality |
+| **`resource-governance.mdc`** | Per-engine disk/link quotas, agent headroom, backpressure |
+
+## Control plane
+
+| File | Topic |
+|------|--------|
+| **`ota-reconciliation.mdc`** | Desired-state reconciliation; deliver / observe / report |
+| **`deployment-manifest.mdc`** | Signed manifest; three questions; verify-first order |
+| **`device-identity-security.mdc`** | Device identity, mTLS, independent on-device verify |
+
+## Engine seam
+
+| File | Topic |
+|------|--------|
+| **`engine-contract.mdc`** | Platform contract any inference engine must satisfy |
+
+## Per-repository product documentation
+
+Each agent repo should provide (not in this package):
+
+| Path | Purpose |
+|------|---------|
+| **`docs/specification/product/`** | Requirements, capabilities, ODD/connectivity profile |
+| **`docs/specification/adr/`** | Architecture decision records (broker, hardware, engine, …) |
+| **`docs/specification/as-built/`** | What is live today |
+| **`tests/README.md`** | Verify/debug commands, feature map |
+| **`README.md`** | Setup, env vars, run commands |
+
+## Cross-project conventions
+
+- **Do not** add product features, tenant names, or hardware SKUs to shared **`.mdc`** files — extend **`docs/specification/`** in the consumer repo.
+- **Do not** edit **`.cursor/rules/`** in consumer repos — propose changes via PR on the upstream `edge-agent-rules` repository.
+- **No emojis** in code or logs; use tags such as **[OK]**, **[ERROR]**, **[WARNING]**, **[INFO]** when needed.
+
+## Where to start
+
+1. **`two-plane-architecture.mdc`** and **`architecture.mdc`** for the organising idea and package layout.
+2. **`engine-contract.mdc`** for the ownership seam with the inference engine.
+3. Consumer repo **`docs/specification/`** when the task changes behavior or integrations.

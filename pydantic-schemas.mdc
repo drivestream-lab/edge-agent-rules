@@ -1,0 +1,54 @@
+---
+description: Pydantic v2 — business layer uses models not Dict; Type-suffixed enums; manifests and buffer records.
+alwaysApply: true
+---
+
+# Schema pattern (Pydantic v2)
+
+## Architecture guardrail
+
+- **`business_services`** method signatures use **Pydantic v2 models** for
+  structured data. Primitives only where a model is unnecessary.
+- **Do not** use untyped **`dict`** / **`Dict[str, Any]`** as the default API.
+- Exceptions need **explicit tech-lead alignment** and documentation.
+
+## Where to use models
+
+- Desired-state documents and Deployment Manifests
+- Buffer records (observability + capture lanes)
+- Milestone / device-state reports
+- Hardware telemetry snapshots
+- Settings documents loaded from files
+
+## Where models live — `src/models/` only
+
+- Named by domain: `manifest_models.py`, `telemetry_models.py`,
+  `device_state_models.py`, etc.
+- Plane packages import from **`src.models.*`**; they do not own public
+  Pydantic models for cross-layer APIs.
+
+## Domain enums
+
+- Subclass **`str, Enum`** (or **`StrEnum`**); class name ends with **`Type`**.
+- Member names **`SCREAMING_SNAKE`**; values stable wire strings.
+- Milestone and role enums are mandatory closed vocabularies
+  (**`ota-reconciliation.mdc`**, **`engine-contract.mdc`**).
+
+## Model strictness
+
+- Prefer **`ConfigDict(extra="forbid")`** for internal DTOs.
+- Use **`extra="ignore"`** only for evolving external scrape payloads when
+  documented.
+- Always use **`Field(default=...)`** keyword form for defaults (pyright).
+
+## Settings
+
+- Shared **`BaseSettings`** with documented **`get_instance()`** when
+  standardized — settings are **not** part of the injector graph
+  (**`dependency-injection.mdc`**).
+
+## Related rules
+
+- **Typing:** `strong-typing.mdc`
+- **Manifest:** `deployment-manifest.mdc`
+- **Layout:** `architecture.mdc`

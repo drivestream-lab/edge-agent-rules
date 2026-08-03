@@ -1,0 +1,62 @@
+---
+description: Inference engine contract — Prometheus/OTel metrics, model-repo hot load/unload, active model version readout; product-agnostic.
+alwaysApply: true
+---
+
+# Engine contract
+
+The platform mandates a **contract**, not a specific inference product. Any
+serving runtime that meets this contract may be used. Concrete engines
+(e.g. Triton) are named only in consumer foundations and ADRs.
+
+## Contract requirements
+
+An inference engine on device must:
+
+1. Expose a **Prometheus and/or OpenTelemetry metrics endpoint** the agent can
+   scrape (passive sidecar / pull — preferred so model-team code stays
+   untouched).
+2. Support **model-repository-style hot load/unload** so shadow and switch
+   need no container restart when headroom allows.
+3. Publish a scrapeable **active model version** fact (and shadow role when
+   applicable) so the agent's reported device/slot state stays truthful after
+   the model team switches.
+
+### Recommended active-version metric shape
+
+Serving clients generated from `edge-triton-client-foundation` (and any
+engine that wants agent interop) SHOULD expose:
+
+| Property | Value |
+|----------|-------|
+| Name | `edge_model_role_info` |
+| Type | Gauge |
+| Value | `1` when loaded in that role; `0` when cleared |
+| Labels | `model`, `version`, `role` where `role` ∈ `{active, shadow}` |
+
+The agent infers `shadow-running` / `promoted` / `reverted` from this scrape
+plus liveness — it does not call engine-internal switch APIs.
+
+## Ownership seam
+
+| Owner | Responsibility |
+|-------|----------------|
+| **Agent (platform)** | Deliver artifact, start/stop engine **containers**, scrape metrics, report milestones, govern resources |
+| **Engine (model team)** | Load/shadow/switch/unload models, evaluate quality, expose metrics + active version |
+
+If (3) is missing, the agent's state goes stale the instant the model team
+switches — this readout is the contract between "model team switches" and
+"agent reports state."
+
+## Agent scrape behaviour
+
+- Prefer **pull** (scrape) over requiring model-team push into the agent.
+- Infer milestones (`shadow-running`, `promoted`, `reverted`) from scraped
+  facts + liveness — do not call engine-internal switch APIs to "confirm"
+  decisions the agent does not own.
+
+## Related rules
+
+- **OTA:** `ota-reconciliation.mdc`
+- **Layout:** `architecture.mdc`
+- **ADR if contract cannot be met:** `edge-agent-adr.mdc`

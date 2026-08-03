@@ -1,0 +1,95 @@
+---
+description: Which Edge Agent decisions require an ADR, the ADR template, and the growth path for deferred flavors.
+alwaysApply: true
+---
+
+# Edge Agent architecture decision records
+
+**Rationale:** an intermittently-connected device next to machine control cannot
+be patched on demand. The *why* behind transport, buffer, and engine-seam
+choices is what keeps a multi-year fleet maintainable after the person who
+chose them has moved on.
+
+## ADR triggers (mandatory)
+
+An ADR is required for any of:
+
+1. **Single uplink vs split uplink** — all telemetry through the broker vs a
+   separate metrics path (doc decision D1 class)
+2. **Edge-local broker vs direct cloud broker** — introducing or removing an
+   on-device message bus (D2 class)
+3. **Declarative desired-state vs imperative commands** on the control plane
+   (D5 class) — lean declarative; deviation needs ADR
+4. **Shadow vs direct-switch only** for a device or slot when memory/compute
+   headroom cannot support transient 2× (D6 class) — cite the slot allocation
+5. **Buffer sizing policy** that is not derived from the product's declared
+   ODD / connectivity profile (D7 class)
+6. **Disk-quota enforcement mechanism** (dedicated volume vs soft quota vs
+   overlay limit) and default retention TTLs (D9 class)
+7. **Adopting QoS 2** anywhere, or dropping MQTT persistent session
+8. **Any security-baseline exception** — skipping independent on-device
+   signature verification, disabling mTLS, widening topic ACLs — with expiry
+9. **Deviating from the engine contract** — an engine that cannot expose
+   Prometheus/OTel metrics, cannot hot-load/unload models, or cannot publish
+   active model version (see **`engine-contract.mdc`**)
+10. **Switching hardware family, broker product, or serving runtime** for a
+    consumer foundation (e.g. leaving the stack a foundation baked in)
+
+Not ADR-worthy: adding a metric to the observability lane, adding a manifest
+field that fits the three-question shape (**`deployment-manifest.mdc`**),
+wiring a new engine that already meets the contract, adding a device to the
+fleet, changing env-only connection strings.
+
+## Explicitly deferred (growth path)
+
+Cloud backbone choices (Kafka, analytics store), multi-flavor rules overlays
+for alternate SoCs/engines, and data-mule physical offload paths are
+**intentionally not** constitution ADRs here. Schedule them when a funded
+product initiative needs them — then pressure-test the core/overlay split
+against that real second flavor.
+
+## Override contract
+
+Any ADR that overrides a constitution default must:
+
+1. **Cite the specific product-spec requirement forcing it.** "We prefer X"
+   fails review. A named ODD constraint, slot memory ceiling, or compliance
+   rule is acceptable.
+2. **Carry a review/expiry date** for security and protocol exceptions —
+   permanent, un-reviewed exceptions do not exist.
+
+## Template (`docs/specification/adr/NNNN-<slug>.md`)
+
+```markdown
+# ADR-NNNN: <decision>
+Status: Proposed | Accepted | Superseded by ADR-MMMM
+Date: YYYY-MM-DD    Deciders: <names>
+
+## Context
+<constraint driving the decision: ODD, slot budget, security zone, ops capacity>
+
+## Options considered
+| Option | Effort | Ops burden | Risk | Notes |
+|---|---|---|---|---|
+
+## Decision
+
+## Consequences
+<migration path, rollback story, what becomes harder>
+```
+
+## Rules
+
+1. **Skills and agents propose, humans accept.** Generated ADRs are born
+   `Status: Proposed` with the options table filled in; a human fills gaps,
+   decides, and flips to Accepted.
+2. **ADR and the implementation land in the same PR.** An accepted ADR with
+   no implementation, or a constitution deviation with no ADR, both fail review.
+3. **ADRs are append-only.** Wrong decisions get superseded, never edited —
+   the history *is* the value.
+
+## Related rules
+
+- **Engine seam:** `engine-contract.mdc`
+- **Security exceptions:** `device-identity-security.mdc`
+- **SDD workflow:** `spec-driven-development.mdc`

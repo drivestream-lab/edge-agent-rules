@@ -1,0 +1,48 @@
+---
+description: Logging with loguru — get_logger, structured JSON, inference/correlation ID context.
+alwaysApply: true
+---
+
+# Logging (loguru)
+
+## Central API
+
+- Implement **`get_logger()`** and **`setup_logging(settings)`** in
+  **`src/logging/`**.
+- Configure sinks, levels, and format from **settings**.
+
+## Output format
+
+- **Production:** structured JSON (one object per line).
+- **Local:** human-readable text.
+- Drive via settings (e.g. `LOG_FORMAT=json|text`).
+- Minimum fields: **`service`**, **`environment`**, **`correlation_id`**,
+  **`level`**, **`message`**, **`timestamp`**.
+
+## Correlation
+
+- Prefer the **inference / capture correlation ID** as the binding point for
+  data-plane work (joins input↔output across scrape, buffer, and publish).
+- For control-plane work, bind a reconcile / deployment event ID.
+- Use **`LoggingContext`** / `logger.contextualize(...)` so nested logs share
+  the ID as a **top-level structured field**.
+
+## Message style
+
+- Keep the message string a static label; put IDs, statuses, and counts as
+  **named kwargs** so JSON mode stays queryable.
+
+```python
+# Correct
+logger.info("Reported milestone", milestone="shadow-running", slot_id=slot_id)
+```
+
+## Secrets
+
+- Never log certs, private keys, tokens, or manifest signing material.
+
+## Related rules
+
+- **Layout:** `architecture.mdc`
+- **Security:** `device-identity-security.mdc`
+- **Buffers:** `local-buffer-pattern.mdc`
