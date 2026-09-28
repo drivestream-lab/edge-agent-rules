@@ -32,7 +32,7 @@ alwaysApply: true
 - Subclass **`str, Enum`** (or **`StrEnum`**); class name ends with **`Type`**.
 - Member names **`SCREAMING_SNAKE`**; values stable wire strings.
 - Milestone and role enums are mandatory closed vocabularies
-  (**`ota-reconciliation.mdc`**, **`engine-contract.mdc`**).
+  (**`desired-state-reconciliation.mdc`**, **`engine-contract.mdc`**).
 
 ## Model strictness
 

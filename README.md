@@ -2,19 +2,23 @@
 
 **Open constitution for Edge Agent services** — shared Cursor agent rules (`.mdc`)
 for a Python agent that scrapes, buffers, and forwards telemetry (data plane) and
-reconciles desired-state OTA (control plane) on constrained edge devices.
+reconciles **desired-state** (control plane) on constrained edge devices.
 
 Rules describe **how to code**. They do **not** contain product requirements,
-tenant names, hardware SKUs, broker product choices, or inference-engine product
-choices — those live in each consumer repo under `docs/specification/` and in
-concrete foundations (e.g. `edge-agent-triton-foundation`).
+tenant names, hardware SKUs, broker product choices, inference-engine product
+choices, or device topology (e.g. who owns the cloud MQTT session) — those live
+in each consumer repo under `docs/specification/` and in foundations.
+
+Shared practices (DI, singleton, fail-fast, logging fields) align with
+[`python-services-rules`](https://github.com/drivestream-lab/python-services-rules)
+naming and intent where the craft overlaps.
 
 | | |
 |---|---|
 | **License** | [MIT](LICENSE) |
-| **Version** | see [`VERSION`](VERSION) (currently **0.1.0**) · [CHANGELOG](CHANGELOG.md) |
+| **Version** | see [`VERSION`](VERSION) (currently **0.2.0**) · [CHANGELOG](CHANGELOG.md) |
 | **Mount path** | `.cursor/rules/` (git submodule) |
-| **Scaffold** | `edge-agent-triton-foundation` — cookiecutter for a Triton/Jetson/EMQX concrete agent |
+| **Scaffold** | Prefer engine-agnostic **`edge-agent-foundation`** when published; `edge-agent-triton-foundation` remains a Triton-flavored variant |
 
 ---
 
@@ -34,10 +38,11 @@ edge-agent-rules/
   local-buffer-pattern.mdc
   offline-dtn-operation.mdc
   resource-governance.mdc
-  ota-reconciliation.mdc
+  desired-state-reconciliation.mdc
   deployment-manifest.mdc
   device-identity-security.mdc
   engine-contract.mdc
+  dependency-injection.mdc
   edge-agent-adr.mdc
   …
 ```
@@ -53,17 +58,14 @@ From the **consumer agent repo root**:
 ```bash
 rm -rf .cursor/rules
 
-git submodule add https://github.com/<org>/edge-agent-rules.git .cursor/rules
-cd .cursor/rules && git checkout v0.1.0 && cd ../..
+git submodule add https://github.com/drivestream-lab/edge-agent-rules.git .cursor/rules
+cd .cursor/rules && git checkout v0.2.0 && cd ../..
 
 git add .gitmodules .cursor/rules
-git commit -m "Add Edge Agent Cursor rules at .cursor/rules (v0.1.0)"
+git commit -m "Add Edge Agent Cursor rules at .cursor/rules (v0.2.0)"
 ```
 
 Cursor loads **`.cursor/rules/*.mdc`** automatically — no copy step.
-
-Greenfield agents may start from `edge-agent-triton-foundation` in your org,
-then pin this rules submodule as above.
 
 ---
 
@@ -71,12 +73,13 @@ then pin this rules submodule as above.
 
 | In scope | Out of scope |
 |----------|--------------|
-| Two-plane transport doctrine (telemetry up, OTA down) | Named broker / SoC / serving-runtime products |
+| Two-plane transport doctrine (telemetry up, desired-state down) | Named broker / SoC / serving-runtime products |
 | Disk-backed dual buffers, value-based eviction | Tenant ODD numbers, physical link names |
-| Desired-state reconciliation + signed manifests | Promotion decision algorithms inside the engine |
+| Desired-state reconciliation + signed manifests | Product OTA campaign / layer ownership |
 | Engine **contract** (metrics + hot-reload + active version) | Model architecture, training, accuracy |
 | Resource governance across engines on one device | Cloud Kafka / analytics-store choices |
-| Python craft adapted for a long-running agent process | Product field catalogs (those → `docs/specification/`) |
+| MQTT **protocol** defaults when the agent owns a client | Sole device-root MQTT gateway requirement |
+| Python craft (DI/singleton aligned with python-services-rules) | Product field catalogs (those → `docs/specification/`) |
 
 Concrete stack defaults (e.g. Triton, Jetson, EMQX) belong in a **foundation**
 and in that consumer's ADRs — not in this package.
@@ -87,9 +90,11 @@ and in that consumer's ADRs — not in this package.
 
 | Repo | Role |
 |------|------|
-| `edge-agent-triton-foundation` | Cookiecutter for a Triton/Jetson/EMQX Edge Agent |
-| `edge-triton-client-foundation` | Cookiecutter for a Triton serving client that satisfies the engine contract |
-| `python-services-rules` | Constitution for FastAPI microservices (different shape — do not mount here) |
+| `edge-agent-foundation` | Engine-agnostic Edge Agent cookiecutter (preferred when published) |
+| `edge-agent-triton-foundation` | Triton/Jetson/EMQX-flavored variant (Law 5) |
+| `edge-triton-client-foundation` | Triton serving client that satisfies the engine contract |
+| `python-services-rules` | FastAPI microservices constitution (different shape — do not mount here) |
+| `rust-device-rules` | Rust device daemon constitution (different craft — do not mount here) |
 
 ---
 
@@ -113,8 +118,8 @@ and in that consumer's ADRs — not in this package.
 4. PR → `develop` → `main`; tag and push:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 ---

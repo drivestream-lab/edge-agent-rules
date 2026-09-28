@@ -1,12 +1,22 @@
 ---
-description: MQTT v5 client contract — QoS 1, persistent session, mTLS, retained desired-state; broker-product-agnostic.
+description: MQTT v5 client contract when the agent owns a broker session — QoS 1, persistent session, mTLS; broker-product-agnostic.
 alwaysApply: true
 ---
 
 # MQTT transport
 
-The Edge Agent uses **one broker client** for both planes. This file defines
-the **protocol contract**, not a broker product catalog.
+This file defines the **MQTT protocol contract** for an Edge Agent process that
+**owns a broker client**. It is not a broker product catalog.
+
+**Ownership of the device-root cloud session** (agent vs host supervisor vs
+other) is **product topology** — document in consumer ADRs. This constitution
+does not require the agent to be the sole device MQTT gateway.
+
+When the agent does **not** own device-root MQTT, uplink/downlink may arrive
+via a host-local client seam; still apply plane doctrine
+(**`two-plane-architecture.mdc`**) and reconciliation
+(**`desired-state-reconciliation.mdc`**). Protocol defaults below apply to any
+MQTT client the agent process does open.
 
 ## Client contract (constitution default)
 
@@ -36,8 +46,8 @@ Reference client libraries for the agent's own process: **`paho-mqtt`** /
 - **Uplink:** publish telemetry from disk-backed buffers; never publish from
   RAM-only queues across power cycles (**`local-buffer-pattern.mdc`**).
 - **Downlink:** subscribe to desired-state; reconcile when online
-  (**`ota-reconciliation.mdc`**). MQTT's strength for intermittent devices is
-  a primary justification for the broker — stronger than uplink alone.
+  (**`desired-state-reconciliation.mdc`**). MQTT's strength for intermittent
+  devices is a primary justification for the broker — stronger than uplink alone.
 
 ## Anti-patterns
 
@@ -45,6 +55,7 @@ Reference client libraries for the agent's own process: **`paho-mqtt`** /
 - Holding the only copy of desired-state in agent RAM without retained/cloud
   shadow backup
 - Silent cleartext MQTT in any environment without an ADR with expiry
+- Encoding product topic catalogs or campaign schemas in this package
 
 ## Related rules
 

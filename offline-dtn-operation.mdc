@@ -40,7 +40,7 @@ management, local health judgement for revert authority when product requires
 
 ## (d) Control plane already survives this
 
-Desired-state reconciliation (**`ota-reconciliation.mdc`**) means a device
+Desired-state reconciliation (**`desired-state-reconciliation.mdc`**) means a device
 offline for the whole window picks up the latest desired state at next
 connect. Large artifact downloads defer to the fat tier — no special-case
 command queue for coverage gaps.
@@ -48,5 +48,5 @@ command queue for coverage gaps.
 ## Related rules
 
 - **Buffers:** `local-buffer-pattern.mdc`
-- **OTA:** `ota-reconciliation.mdc`
+- **Reconcile:** `desired-state-reconciliation.mdc`
 - **ADR (sizing policy):** `edge-agent-adr.mdc`
