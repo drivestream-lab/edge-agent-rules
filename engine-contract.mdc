@@ -57,6 +57,6 @@ switches — this readout is the contract between "model team switches" and
 
 ## Related rules
 
-- **OTA:** `ota-reconciliation.mdc`
+- **Reconcile:** `desired-state-reconciliation.mdc`
 - **Layout:** `architecture.mdc`
 - **ADR if contract cannot be met:** `edge-agent-adr.mdc`

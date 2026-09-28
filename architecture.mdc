@@ -22,7 +22,7 @@ required.
 
 ## Two planes are doctrine, not package folders
 
-Data plane (telemetry uplink) vs control plane (OTA downlink) organise
+Data plane (telemetry uplink) vs control plane (desired-state downlink) organise
 **responsibilities** — see **`two-plane-architecture.mdc`**. They are **not**
 mandatory top-level packages (`src/data_plane/`, `src/control_plane/`). Map
 plane work into business vs infra services instead.
@@ -36,7 +36,7 @@ plane work into business vs infra services instead.
   and return the runnable. Avoid business logic beyond wiring.
 
 Day-one cold start and later updates share **one code path**: compare desired
-vs actual and reconcile (see **`ota-reconciliation.mdc`**).
+vs actual and reconcile (see **`desired-state-reconciliation.mdc`**).
 
 ## Standard packages
 
@@ -113,5 +113,5 @@ layers =
 - **Planes (doctrine):** `two-plane-architecture.mdc`
 - **DI:** `dependency-injection.mdc`
 - **Fail fast:** `fail-fast.mdc`
-- **OTA:** `ota-reconciliation.mdc`
+- **Reconcile:** `desired-state-reconciliation.mdc`
 - **Engine seam:** `engine-contract.mdc`
