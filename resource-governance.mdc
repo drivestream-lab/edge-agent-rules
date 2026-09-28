@@ -19,11 +19,15 @@ the on-device **resource governor**.
    upload (else value/age eviction within quota); log rotation; GC superseded
    model artifacts while keeping last-known-good + active A/B; TTL for temp.
 3. **Agent headroom first** — reserved quota/partition for control-plane needs
-   (desired-state, agent buffers, identity, agent logs) that **no engine can
-   evict**. A full disk must never break OTA receive or report.
-4. **Uplink fairness** — per-engine / per-tenant bandwidth or priority so one
+   (desired-state, agent buffers, identity material the agent holds, agent logs)
+   that **no engine can evict**. A full disk must never break desired-state
+   receive or report.
+4. **Do not invent host disk topology** in the agent when a host authority
+   supplies paths — consume allocated paths/quotas; physical layout creation is
+   outside this craft (consumer ADR).
+5. **Uplink fairness** — per-engine / per-tenant bandwidth or priority so one
    team's bulk captures cannot starve another's sync window.
-5. **Backpressure over global failure** — measure usage, emit on observability
+6. **Backpressure over global failure** — measure usage, emit on observability
    lane, on breach pause the offending engine's capture or alert — do not let
    one neighbor take everyone down.
 

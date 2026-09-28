@@ -56,7 +56,7 @@ Never download or execute based on an unverified manifest body.
 
 ## Related rules
 
-- **OTA loop:** `ota-reconciliation.mdc`
+- **Reconcile loop:** `desired-state-reconciliation.mdc`
 - **Security:** `device-identity-security.mdc`
 - **Pydantic:** `pydantic-schemas.mdc`
 - **Fail fast:** `fail-fast.mdc`

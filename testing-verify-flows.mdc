@@ -37,7 +37,7 @@ tests/
 |----------|------|--------------------|
 | **Pytest** | Fast in-process; mock MQTT, container runtime, hardware telemetry | `make test` |
 | **Verify** | Contract smoke against compose stack (broker + engine stand-in) | `python -m tests.verify.<script>` |
-| **Device** | Real SoC / GPU / OTA slot behaviour | Documented in `tests/README.md`; **not** CI |
+| **Device** | Real SoC / GPU / slot behaviour | Documented in `tests/README.md`; **not** CI |
 | **Debug** | Exploration | `python -m tests.debug.<script>` |
 
 **`make test`** must ignore `tests/verify/`, `tests/device/`, `tests/debug/`,

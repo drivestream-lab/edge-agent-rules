@@ -18,7 +18,7 @@ tenant ODD numbers, and env URLs belong in each agent repo under
 Every rule below states a **use-case pattern** for an agent that:
 
 1. Scrapes / buffers / forwards telemetry (data plane, uplink)
-2. Reconciles desired-state OTA (control plane, downlink)
+2. Reconciles desired-state (control plane, downlink)
 3. Delivers artifacts to a containerized inference engine and observes it —
    **never** decides model promote/revert
 
@@ -43,7 +43,7 @@ the consumer foundation and that repo's ADRs.
 | **`two-plane-architecture.mdc`** | Data plane vs control plane; model artifact off both planes |
 | **`fail-fast.mdc`** | Fail fast; no silent defensive recovery without approval |
 | **`python-imports.mdc`** | All imports at top of file; DI bootstrap exception |
-| **`dependency-injection.mdc`** | `injector`, `@inject`, infra/business lifecycle |
+| **`dependency-injection.mdc`** | `injector`, `@inject`, container-owned singleton (aligns python-services-rules) |
 | **`pydantic-schemas.mdc`** | Pydantic not Dict; domain enums with `Type` suffix |
 | **`strong-typing.mdc`** | Annotations, validated boundaries |
 | **`logging-loguru.mdc`** | `get_logger`, structured JSON, inference correlation ID |
@@ -53,7 +53,7 @@ the consumer foundation and that repo's ADRs.
 
 | File | Topic |
 |------|--------|
-| **`mqtt-transport.mdc`** | MQTT v5 / QoS 1 / persistent session / mTLS client contract |
+| **`mqtt-transport.mdc`** | MQTT v5 protocol when agent owns a broker client; ownership = product ADR |
 | **`local-buffer-pattern.mdc`** | Two lanes, disk-backed, value-based eviction |
 | **`offline-dtn-operation.mdc`** | Disconnected-by-design, tiered sync by link quality |
 | **`resource-governance.mdc`** | Per-engine disk/link quotas, agent headroom, backpressure |
@@ -62,9 +62,9 @@ the consumer foundation and that repo's ADRs.
 
 | File | Topic |
 |------|--------|
-| **`ota-reconciliation.mdc`** | Desired-state reconciliation; deliver / observe / report |
+| **`desired-state-reconciliation.mdc`** | Desired-state reconciliation; deliver / observe / report |
 | **`deployment-manifest.mdc`** | Signed manifest; three questions; verify-first order |
-| **`device-identity-security.mdc`** | Device identity, mTLS, independent on-device verify |
+| **`device-identity-security.mdc`** | On-device verify, secrets hygiene; device-root holder = product ADR |
 
 ## Engine seam
 

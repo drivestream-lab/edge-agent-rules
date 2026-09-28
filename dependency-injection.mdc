@@ -1,5 +1,5 @@
 ---
-description: Injector-based DI — @inject for all services, modules, container, init/shutdown lifecycle.
+description: Injector-based DI — unified @inject for all services, modules, container, singletons, lifespan (aligns python-services-rules).
 alwaysApply: true
 ---
 
@@ -8,9 +8,16 @@ alwaysApply: true
 ## Design principle
 
 **One DI style for all services.** Infra and business services use **`@inject`**
-on `__init__`. The container owns singleton creation — no `get_instance()` on
-service classes. Settings use a **separate** `get_instance()` pattern and are
-**not** injected.
+on `__init__`. The `injector` container owns **singleton** creation for every
+service type — there is no `get_instance()` singleton pattern on service
+classes. This matches **`python-services-rules`** / `dependency-injection.mdc`
+practice: one readable dependency graph across entry points.
+
+Settings use a **separate** `get_instance()` pattern and are **not** injected.
+
+The `BaseInfraService` async lifecycle (`initialize` / `close` / `health_check`)
+is a **separate concern** from DI construction — open/close after the event
+loop is running, not object creation.
 
 ## Container
 
@@ -20,9 +27,11 @@ service classes. Settings use a **separate** `get_instance()` pattern and are
 
 ## Modules (typical)
 
+- Register **`@singleton`** (or `binder.bind(..., scope=singleton)`) for
+  long-lived services created once per process — same as python-services-rules.
 - **`ConfigModule`** — do **not** bind settings classes; keep empty or
   non-settings bindings only
-- **`InfraModule`** — MQTT, disk buffers, scrape client, artifact/manifest
+- **`InfraModule`** — MQTT (if owned), disk buffers, scrape client, artifact/manifest
   verifier, container runtime, hardware telemetry (`*_service` modules)
 - **`BusinessServicesModule`** — reconcile, governance, telemetry forward
   orchestration (`*_service` modules)
